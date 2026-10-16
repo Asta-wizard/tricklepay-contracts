@@ -10,7 +10,7 @@ use soroban_sdk::{
 
 use crate::contract::{StreamContract, StreamContractClient};
 use crate::storage::{self, DataKey};
-use crate::Stream;
+use crate::{Stream, StreamError};
 
 /// A fully wired test environment: a registered stream contract, a token to
 /// stream, and helpers to fund accounts and move the ledger clock.
@@ -92,7 +92,7 @@ impl<'a> StreamTest<'a> {
 
     /// Open a stream over `[100, 1100]` with no cliff, the shape most of these
     /// tests use.
-    fn open_default_stream(&self, amount: i128) -> u64 {
+    pub fn open_default_stream(&self, amount: i128) -> u64 {
         self.contract.create_stream(
             &self.sender,
             &self.recipient,

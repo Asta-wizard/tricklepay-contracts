@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use soroban_sdk::vec;
+use soroban_sdk::{vec, Event};
 
 use crate::events::{Cancelled, Created, Withdrawn};
 
