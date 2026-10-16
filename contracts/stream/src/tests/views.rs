@@ -325,3 +325,41 @@ fn test_third_party_view_access() {
         "read-only view functions must be unauthenticated and produce empty auth list"
     );
 }
+
+/// Issue #359 — all views agree at every sampled point in a stream's
+/// lifecycle: vested + locked equals the deposit, withdrawable never exceeds
+/// vested, and progress tracks the same vesting fraction.
+#[test]
+fn views_agree_at_every_sampled_time() {
+    let t = StreamTest::setup(1_000);
+    t.set_time(100);
+    let id = t.contract.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_address,
+        &1_000,
+        &100,
+        &1_100,
+        &100,
+    );
+
+    for now in [50u64, 100, 101, 250, 500, 600, 850, 1_099, 1_100, 1_200] {
+        t.set_time(now);
+        let vested = t.contract.vested(&id);
+        let locked = t.contract.locked(&id);
+        let withdrawable = t.contract.withdrawable(&id);
+        let progress = t.contract.progress(&id);
+
+        assert_eq!(vested + locked, 1_000, "time={now}");
+        assert!(withdrawable >= 0 && withdrawable <= vested, "time={now}");
+
+        let expected_progress = if now <= 100 {
+            0
+        } else if now >= 1_100 {
+            10_000
+        } else {
+            ((now - 100) * 10_000 / 1_000) as u32
+        };
+        assert_eq!(progress, expected_progress, "time={now}");
+    }
+}
