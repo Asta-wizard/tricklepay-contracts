@@ -802,9 +802,6 @@ fn test_two_streams_sharing_a_token_settle_independently() {
 fn test_cancellation_refunds_stored_sender() {
     let t = StreamTest::setup(1_000);
 
-    // Create one stream, meaning the counter is at 1.
-    t.open_default_stream(1_000);
-    assert_eq!(t.contract.stream_count(), 1);
     t.set_time(100);
 
     let stored_sender = t.sender.clone();
@@ -819,6 +816,7 @@ fn test_cancellation_refunds_stored_sender() {
         &1_100,
         &100,
     );
+    assert_eq!(t.contract.stream_count(), 1);
 
     // Initial balances after stream creation
     assert_eq!(t.token.balance(&stored_sender), 0);
@@ -839,6 +837,30 @@ fn test_cancellation_refunds_stored_sender() {
     assert_eq!(t.token.balance(&t.recipient), 0);
     // The contract retains only the unwithdrawn vested remainder for the recipient
     assert_eq!(t.token.balance(&t.contract.address), 500);
+}
+
+#[test]
+fn counter_is_unchanged_by_withdrawals() {
+    let t = StreamTest::setup(1_000);
+    t.set_time(100);
+    let id = t.contract.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_address,
+        &1_000,
+        &100,
+        &1_100,
+        &100,
+    );
+
+    let initial_count = t.contract.stream_count();
+
+    t.set_time(600);
+    t.contract.withdraw_amount(&id, &200);
+    assert_eq!(t.contract.stream_count(), initial_count);
+
+    t.contract.withdraw(&id);
+    assert_eq!(t.contract.stream_count(), initial_count);
 }
 
 /// Issue #300 — Test that nothing is withdrawable straight after a full withdrawal.

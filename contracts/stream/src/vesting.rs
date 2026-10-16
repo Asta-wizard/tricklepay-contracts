@@ -130,6 +130,11 @@ mod tests {
     }
 
     #[test]
+    fn exact_vesting_at_the_midpoint() {
+        assert_eq!(vested_amount(TOTAL, START, END, START, 600), 500);
+    }
+
+    #[test]
     fn quarter_vests_at_quarter_point() {
         assert_eq!(vested_amount(TOTAL, START, END, START, 350), 250);
     }
@@ -142,6 +147,13 @@ mod tests {
     #[test]
     fn full_amount_vests_after_end() {
         assert_eq!(vested_amount(TOTAL, START, END, START, 9_999), TOTAL);
+    }
+
+    #[test]
+    fn vesting_never_exceeds_the_total() {
+        for now in [1_099, 1_100, 1_101, 2_000, 10_000, 100_000] {
+            assert!(vested_amount(TOTAL, START, END, START, now) <= TOTAL);
+        }
     }
 
     #[test]
