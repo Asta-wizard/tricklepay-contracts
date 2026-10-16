@@ -198,7 +198,7 @@ fn rejected_create_publishes_no_events() {
     let sender = t.sender.clone();
     assert!(t.try_create_stream_for_raw(&sender, &t.contract.address, &t.token_address, 1_000));
     t.assert_create_stream_error(
-        &sender,
+        &t.contract.address,
         &sender,
         &t.token_address,
         1_000,

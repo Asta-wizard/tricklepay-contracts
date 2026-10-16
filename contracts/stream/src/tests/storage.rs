@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use soroban_sdk::testutils::Ledger as _;
+
 use crate::storage::{DataKey, BUMP_THRESHOLD, ENTRY_TTL};
 use crate::StreamError;
 
