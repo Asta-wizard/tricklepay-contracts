@@ -50,9 +50,8 @@ fn withdraw_amount_emits_withdrawn_after_the_payout_transfer() {
     t.set_time(600);
     let recipient_balance_before = t.token.balance(&t.recipient);
     let withdrawn = t.contract.withdraw_amount(&id, &200);
-    let transferred = t.token.balance(&t.recipient) - recipient_balance_before;
+    let transferred = withdrawn;
 
-    assert_eq!(withdrawn, transferred);
     t.assert_latest_stream_event_topics(
         Withdrawn {
             recipient: t.recipient.clone(),
@@ -63,6 +62,10 @@ fn withdraw_amount_emits_withdrawn_after_the_payout_transfer() {
     );
 
     assert_eq!(t.event_publishers(), t.transfer_then_announce());
+    assert_eq!(
+        t.token.balance(&t.recipient) - recipient_balance_before,
+        transferred
+    );
 }
 
 /// `cancel` refunds the sender before announcing the cancellation.
