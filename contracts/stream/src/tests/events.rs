@@ -187,6 +187,53 @@ fn cancelled_event_topics_index_sender() {
     assert_eq!(t.contract.get_stream(&id).total_amount, 500);
 }
 
+/// Issue #361 — each lifecycle event carries the address that acted on the
+/// operation, so consumers can attribute the state change without guessing
+/// from the stream record.
+#[test]
+fn lifecycle_events_carry_the_acting_party() {
+    let t = StreamTest::setup(1_000);
+    t.set_time(100);
+    let id = t.open_default_stream(1_000);
+
+    t.assert_latest_stream_event_topics(
+        Created {
+            sender: t.sender.clone(),
+            recipient: t.recipient.clone(),
+            id,
+            token: t.token_address.clone(),
+            total_amount: 1_000,
+            start_time: 100,
+            end_time: 1_100,
+            cliff_time: 100,
+        }
+        .to_xdr(&t.env, &t.contract.address),
+    );
+
+    t.set_time(600);
+    assert_eq!(t.contract.withdraw(&id), 500);
+    t.assert_latest_stream_event_topics(
+        Withdrawn {
+            recipient: t.recipient.clone(),
+            id,
+            amount: 500,
+        }
+        .to_xdr(&t.env, &t.contract.address),
+    );
+
+    t.set_time(700);
+    assert_eq!(t.contract.cancel(&id), 400);
+    t.assert_latest_stream_event_topics(
+        Cancelled {
+            sender: t.sender.clone(),
+            id,
+            recipient_amount: 100,
+            sender_refund: 400,
+        }
+        .to_xdr(&t.env, &t.contract.address),
+    );
+}
+
 /// A creation rejected for an invalid participant publishes nothing: the
 /// participant checks run before any token moves, so there is neither a
 /// transfer event nor a `Created` event for an indexer to unwind.
