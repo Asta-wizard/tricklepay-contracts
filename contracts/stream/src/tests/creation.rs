@@ -811,3 +811,28 @@ fn native_asset_token_compatibility_lifecycle() {
     assert_eq!(native_token.balance(&sender), 1_000);
     assert_eq!(contract.status(&id), StreamStatus::Cancelled);
 }
+
+/// Issue #358 — a stream created at the current ledger time has no elapsed
+/// vesting time and therefore starts with zero vested balance.
+#[test]
+fn stream_created_at_current_ledger_time_vests_from_zero() {
+    let t = StreamTest::setup(1_000);
+    let start = 500;
+    t.set_time(start);
+
+    let id = t.contract.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_address,
+        &1_000,
+        &start,
+        &(start + 1_000),
+        &start,
+    );
+
+    assert_eq!(t.contract.vested(&id), 0);
+    assert_eq!(t.contract.withdrawable(&id), 0);
+    assert_eq!(t.contract.progress(&id), 0);
+    assert_eq!(t.contract.status(&id), StreamStatus::Streaming);
+    assert_eq!(t.token.balance(&t.contract.address), 1_000);
+}

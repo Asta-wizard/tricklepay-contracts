@@ -232,3 +232,35 @@ fn test_third_party_cannot_mutate_streams() {
         "cancel must not accept third party auth"
     );
 }
+
+/// Issue #360 — a caller without sender authorization cannot cancel a stream
+/// or move any of its escrowed tokens.
+#[test]
+fn unauthorized_cancel_leaves_escrow_intact() {
+    let t = StreamTest::setup(1_000);
+    t.set_time(100);
+    let id = t.contract.create_stream(
+        &t.sender,
+        &t.recipient,
+        &t.token_address,
+        &1_000,
+        &100,
+        &1_100,
+        &100,
+    );
+
+    t.set_time(600);
+    let before = t.contract.get_stream(&id);
+    let sender_balance = t.token.balance(&t.sender);
+    let contract_balance = t.token.balance(&t.contract.address);
+
+    // Disable the fixture's all-auth mock. No authorization entry means the
+    // sender's require_auth() must reject the cancellation.
+    t.env.set_auths(&[]);
+    assert!(t.contract.try_cancel(&id).is_err());
+
+    assert_eq!(t.contract.get_stream(&id), before);
+    assert_eq!(t.token.balance(&t.sender), sender_balance);
+    assert_eq!(t.token.balance(&t.contract.address), contract_balance);
+    assert_eq!(t.contract.withdrawable(&id), 500);
+}
