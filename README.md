@@ -825,6 +825,24 @@ Compute its SHA-256 hash:
 sha256sum target/wasm32v1-none/release/tricklepay_stream.wasm
 ```
 
+### Troubleshooting: wrong WASM build target
+
+If deployment or `stellar contract install` fails with a `WasmVm` error about
+unsupported `reference-types` or `multi-value` features, the artifact was
+probably built for `wasm32-unknown-unknown`. That target is not accepted by
+the Soroban host for this project. Remove the wrong artifact and rebuild with
+the pinned target:
+
+```bash
+rm -f target/wasm32-unknown-unknown/release/tricklepay_stream.wasm
+cargo build --release --target wasm32v1-none
+stellar contract inspect --wasm target/wasm32v1-none/release/tricklepay_stream.wasm
+```
+
+Do not rename a `wasm32-unknown-unknown` artifact to make it look like the
+supported target. The target affects the WASM features emitted by the compiler;
+the file name alone cannot make an incompatible module deployable.
+
 To run one test while iterating on a focused change, pass the test name after
 `cargo test`:
 

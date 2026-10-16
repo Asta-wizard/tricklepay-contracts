@@ -261,6 +261,25 @@ mod tests {
         assert_eq!(s.refund, 250);
         assert_eq!(s.recipient_remaining, 0);
     }
+
+    /// Issue #357 — settlement is a pure split of the remaining escrow. It
+    /// must be deterministic and conserve every unit not already withdrawn.
+    #[test]
+    fn settlement_is_pure_and_conserves_remaining_escrow() {
+        for (total, vested, withdrawn) in [
+            (1_000, 0, 0),
+            (1_000, 500, 0),
+            (1_000, 500, 200),
+            (1_000, 999, 999),
+            (1_000, 1_000, 400),
+        ] {
+            let first = settlement(total, vested, withdrawn);
+            let second = settlement(total, vested, withdrawn);
+
+            assert_eq!(first, second);
+            assert_eq!(first.refund + first.recipient_remaining, total - withdrawn);
+        }
+    }
 }
 
 #[cfg(test)]

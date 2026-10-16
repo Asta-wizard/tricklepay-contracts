@@ -6,6 +6,34 @@ use crate::{StreamError, StreamStatus};
 
 use super::helpers::StreamTest;
 
+/// Issue #356 — authorization is checked before create_stream can transfer
+/// tokens, allocate an id, or write a stream record.
+#[test]
+fn create_requires_authorization_before_any_state_change() {
+    let t = StreamTest::setup(1_000);
+    t.set_time(100);
+
+    let sender_balance = t.token.balance(&t.sender);
+    t.env.set_auths(&[]);
+
+    assert!(t
+        .contract
+        .try_create_stream(
+            &t.sender,
+            &t.recipient,
+            &t.token_address,
+            &1_000,
+            &100,
+            &1_100,
+            &100,
+        )
+        .is_err());
+
+    assert_eq!(t.contract.stream_count(), 0);
+    assert_eq!(t.token.balance(&t.sender), sender_balance);
+    assert_eq!(t.token.balance(&t.contract.address), 0);
+}
+
 #[test]
 fn withdraw_requires_recipient_authorization() {
     let t = StreamTest::setup(1_000);
